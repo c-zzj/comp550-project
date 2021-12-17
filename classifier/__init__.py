@@ -37,8 +37,8 @@ class Classifier:
     """
 
     def __init__(self,
-                 training: LabeledDataset,
-                 validation: LabeledDataset,
+                 training: TensorDataset,
+                 validation: TensorDataset,
                  ):
         self.device = device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.training = training
@@ -94,8 +94,8 @@ class NNClassifier(Classifier):
 
     def __init__(self,
                  model: Callable[..., Module],
-                 training: LabeledDataset,
-                 validation: LabeledDataset,
+                 training: TensorDataset,
+                 validation: TensorDataset,
                  network_params: Dict[str, Any] = {},
                  ):
         """

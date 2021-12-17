@@ -46,3 +46,13 @@ def train_model(model: Callable[..., Module], fname: str, model_params: Dict[str
               start_epoch=continue_from + 1
               )
 
+if __name__ == '__main__':
+    raw = read_data(RAW_DATASET_PATH)
+    p1 = []
+    transformed_data = transform_raw_data(raw, p1)
+    train, val, test = split_dataset(transformed_data)
+
+    p2 = []
+    train = preprocess(train, p2)
+    val = preprocess(val, p2)
+    test = preprocess(test, p2)
