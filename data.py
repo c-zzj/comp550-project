@@ -2,6 +2,7 @@ from typing import List, Any, Union, Optional, Callable, Tuple
 from pathlib import Path
 import pandas as pd
 import numpy as np
+from torch.utils.data import Dataset
 
 
 def read_data(raw_data: Path) -> pd.DataFrame:
@@ -9,12 +10,12 @@ def read_data(raw_data: Path) -> pd.DataFrame:
     return df
 
 
-def preprocess(data: Any, pipeline: List[Callable]) -> Any:
+def preprocess(data: Any, pipeline: List[Callable]) -> Dataset:
     """
     Apply list of preprocesses to data
     :param data:
     :param pipeline:
-    :return:
+    :return: The preprocessed data. __getitem__(self, idx) should return a tuple (features, labels)
     """
     for step in pipeline:
         data = step(data)

@@ -14,30 +14,7 @@ from classifier.LogisticRegression import *
 from classifier.metric import *
 from classifier.plugin import *
 
-'''
-df = pd.read_csv('mtsamples.csv')
-df = df[df['transcription'].notna()]
-df = df.drop(columns = ['Unnamed: 0'])
 
-le = LabelEncoder()
-df.medical_specialty = le.fit_transform(df.medical_specialty)
-
-
-def clean(text):
-    text = text.lower()
-    text = re.sub('[^a-zA-Z]',' ', text)
-    text_tokens = word_tokenize(text)
-    tokens_without_sw = [word for word in text_tokens if not word in stopwords.words()]
-    cleaned_news = ' '.join(tokens_without_sw)
-    return cleaned_news
-
-
-X = df["transcription"].to_list()
-y = df["medical_specialty"].to_list()
-
-tokenizer = AutoTokenizer.from_pretrained("emilyalsentzer/Bio_ClinicalBERT")
-model = AutoModel.from_pretrained("emilyalsentzer/Bio_ClinicalBERT")
-'''
 RAW_DATASET_PATH = Path('hate_speech_mlma/en_dataset_with_stop_words.csv')
 
 data = read_data(RAW_DATASET_PATH)

@@ -1,5 +1,5 @@
-##COMP 550 Project
+# COMP 550 Final Project
 
-##A Case Study on Character Level Convolutional Neural Networks
+## A Case Study on Character Level Convolutional Neural Networks
 
 by Yuyan Chen, Yingxuan Wang, Zijun Zhao
