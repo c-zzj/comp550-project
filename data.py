@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
-
+from torch import Tensor
 
 def read_data(raw_data: Path) -> pd.DataFrame:
     df = pd.read_csv(raw_data)
@@ -39,3 +39,15 @@ def split_dataset(data: np.ndarray, ratios: Tuple[int] = (8, 1, 1), random_seed:
     test_start = int(length * (train_ratio + val_ratio))
     train, val, test = data[:val_start], data[val_start:test_start], data[test_start:]
     return train, val, test
+
+
+class LabeledDataset(Dataset):
+    def __init__(self, x: Tensor, y: Tensor):
+        self.x = x
+        self.y = y
+
+    def __len__(self):
+        return self.x.size(dim=0)
+
+    def __getitem__(self, idx):
+        return self.x[idx], self.y[idx]

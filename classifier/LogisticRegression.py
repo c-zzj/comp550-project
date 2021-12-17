@@ -13,8 +13,8 @@ class LogisticRegression(Module):
 
 class LogisticRegressionClassifier(NNClassifier):
     def __init__(self,
-                 training: Dataset,
-                 validation: Dataset,
+                 training: LabeledDataset,
+                 validation: LabeledDataset,
                  in_size,
                  out_size,
                  ):
