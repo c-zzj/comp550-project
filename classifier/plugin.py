@@ -3,7 +3,7 @@ from timeit import default_timer as timer
 from matplotlib import pyplot as plt
 
 
-def save_model(folder_path: Path, save_last: bool = False, step: int = 1) -> TrainingPlugin:
+def SaveModel(folder_path: Path, save_last: bool = False, step: int = 1) -> TrainingPlugin:
     """
     :param folder_path: the path of the folder to save the model
     :param step: step size of epochs to activate the plugin
@@ -21,7 +21,7 @@ def save_model(folder_path: Path, save_last: bool = False, step: int = 1) -> Tra
     return plugin
 
 
-def save_good_models(folder_path: Path, tolerance=0.01, step: int = 1) -> TrainingPlugin:
+def SaveGoodModels(folder_path: Path, metric: Metric, tolerance=0.01, step: int = 1) -> TrainingPlugin:
     """
     :param folder_path: the path of the folder to save the model
     :param step: step size of epochs to activate the plugin
@@ -34,7 +34,7 @@ def save_good_models(folder_path: Path, tolerance=0.01, step: int = 1) -> Traini
         if epoch % step == 0:
             if epoch != 1:
                 e = clf._tmp['learning_path']['epochs']
-                val = clf._tmp['learning_path']['val']
+                val = clf._tmp['learning_path'][str(metric)]['val']
                 indices_to_remove = []
                 best = max(val)
                 for i in range(len(val)):
@@ -51,7 +51,7 @@ def save_good_models(folder_path: Path, tolerance=0.01, step: int = 1) -> Traini
     return plugin
 
 
-def save_training_message(folder_path: Path, step: int = 1, empty_previous: bool = True) -> TrainingPlugin:
+def SaveTrainingMessage(folder_path: Path, step: int = 1, empty_previous: bool = True) -> TrainingPlugin:
     """
     :param empty_previous:
     :param folder_path: the path of the log to be saved
@@ -68,7 +68,7 @@ def save_training_message(folder_path: Path, step: int = 1, empty_previous: bool
     return plugin
 
 
-def elapsed_time(print_to_console: bool = True, log: bool = True, step: int = 1) -> TrainingPlugin:
+def ElapsedTime(print_to_console: bool = True, log: bool = True, step: int = 1) -> TrainingPlugin:
     """
 
     :param print_to_console:
@@ -110,7 +110,7 @@ def calc_train_val_performance(metric: Metric, batch_size: int = 300, step: int 
     return plugin
 
 
-def log_train_val_performance(metric: Metric, batch_size: int = 300, step: int = 1) -> TrainingPlugin:
+def LogTrainValPerformance(metric: Metric, batch_size: int = 300, step: int = 1) -> TrainingPlugin:
     """
     :param metric:
     :param batch_size: size of the batch of each prediction (for solving the GPU out-of-memory problem)
@@ -119,7 +119,7 @@ def log_train_val_performance(metric: Metric, batch_size: int = 300, step: int =
     """
     def plugin(clf: NNClassifier, epoch: int) -> None:
         if epoch % step == 0:
-            if type(clf._tmp) != dict or str(metric) not in clf._tmp:
+            if str(metric) not in clf._tmp:
                 train, val = clf.train_performance(metric, batch_size), clf.val_performance(metric, batch_size)
             else:
                 train, val = clf._tmp[str(metric)][0], clf._tmp[str(metric)][1]
@@ -128,7 +128,7 @@ def log_train_val_performance(metric: Metric, batch_size: int = 300, step: int =
     return plugin
 
 
-def print_train_val_performance(metric: Metric, batch_size: int = 300, step: int = 1) -> TrainingPlugin:
+def PrintTrainValPerformance(metric: Metric, batch_size: int = 300, step: int = 1) -> TrainingPlugin:
     """
 
     :param metric:
@@ -139,7 +139,7 @@ def print_train_val_performance(metric: Metric, batch_size: int = 300, step: int
 
     def plugin(clf: NNClassifier, epoch: int) -> None:
         if epoch % step == 0:
-            if type(clf._tmp) != dict or str(metric) not in clf._tmp:
+            if str(metric) not in clf._tmp:
                 train, val = clf.train_performance(metric, batch_size), clf.val_performance(metric, batch_size)
             else:
                 train, val = clf._tmp[str(metric)]
@@ -148,7 +148,7 @@ def print_train_val_performance(metric: Metric, batch_size: int = 300, step: int
     return plugin
 
 
-def save_train_val_performance(folder_path: Path, metric: Metric, batch_size: int = 300, step: int = 1) -> TrainingPlugin:
+def SaveTrainValPerformance(folder_path: Path, metric: Metric, batch_size: int = 300, step: int = 1) -> TrainingPlugin:
     """
 
     :param folder_path:
@@ -162,12 +162,14 @@ def save_train_val_performance(folder_path: Path, metric: Metric, batch_size: in
 
     def plugin(clf: NNClassifier, epoch: int) -> None:
         if epoch % step == 0:
-            if type(clf._tmp) != dict or str(metric) not in clf._tmp:
+            if str(metric) not in clf._tmp:
                 train, val = clf.train_performance(metric, batch_size), clf.val_performance(metric, batch_size)
             else:
                 train, val = clf._tmp[str(metric)]
             if 'learning_path' not in clf._tmp:
-                clf._tmp['learning_path'] = {'epochs': [], 'train': [], 'val': []}
+                clf._tmp['learning_path'] = {'epochs': []}
+            if str(metric) not in clf._tmp['learning_path']:
+                clf._tmp['learning_path'][str(metric)] = {'train': [], 'val': []}
             clf._tmp['learning_path']['epochs'].append(epoch)
             clf._tmp['learning_path'][str(metric)]['train'].append(train)
             clf._tmp['learning_path'][str(metric)]['val'].append(val)
@@ -177,7 +179,7 @@ def save_train_val_performance(folder_path: Path, metric: Metric, batch_size: in
 
 def load_train_val_performance(folder_path: Path) -> Dict[str, list]:
     """
-    load the saved learning path generated by save_train_val_performance
+    load the saved learning path generated by SaveTrainValPerformance
     :param folder_path:
     :return: {'epochs': List[float], metric: {'train': List[float], 'val': List[float]} }
     """
@@ -187,13 +189,13 @@ def load_train_val_performance(folder_path: Path) -> Dict[str, list]:
         raise FileNotFoundError(f"The learning path for {folder_path} has not been saved!")
 
 
-def plot_train_val_performance(folder_path: Path,
-                               title: str,
-                               metric: Metric,
-                               show: bool = True,
-                               save: bool = False,
-                               batch_size: int = 300,
-                               step: int = 1) -> TrainingPlugin:
+def PlotTrainValPerformance(folder_path: Path,
+                            title: str,
+                            metric: Metric,
+                            show: bool = True,
+                            save: bool = False,
+                            batch_size: int = 300,
+                            step: int = 1) -> TrainingPlugin:
     """
 
     :param save:
@@ -212,7 +214,7 @@ def plot_train_val_performance(folder_path: Path,
 
     def plugin(clf: NNClassifier, epoch: int) -> None:
         if epoch % step == 0:
-            if type(clf._tmp) != dict or str(metric) not in clf._tmp:
+            if str(metric) not in clf._tmp:
                 train, val = clf.train_performance(metric, batch_size), clf.val_performance(metric, batch_size)
             else:
                 train, val = clf._tmp[str(metric)]

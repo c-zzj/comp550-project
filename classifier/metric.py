@@ -1,18 +1,17 @@
 from classifier import *
 from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score
 
 
 class Accuracy:
     def __call__(self, clf: Classifier, data_loader: DataLoader, ) -> float:
-        total = 0
-        correct = 0
+        true = []
+        pred = []
         for i, data in enumerate(data_loader, 0):
             x = data[0].to(clf.device)
-            pred = clf.predict(x)
-            true = data[1].to(clf.device)
-            total += data_loader.batch_size
-            correct += (pred == true).sum().item()
-        return correct / total
+            pred += clf.predict(x).tolist()
+            true += data[1].to(clf.device).tolist()
+        return accuracy_score(true, pred)
 
     def __str__(self):
         return 'Accuracy'

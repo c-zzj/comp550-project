@@ -2,13 +2,14 @@ from typing import Callable, Dict
 
 import torch
 from torch import device
-from torch.nn import Module, CrossEntropyLoss
+from torch.nn import Module, CrossEntropyLoss, functional
 from torch.optim import Adam, SGD, Optimizer
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data import random_split
 from torch import Tensor
 
 from data import *
+
 
 TrainingPlugin = Callable[[Any, int], None]
 Metric = Callable[[Any, DataLoader], float]  # pred, true -> result. The higher the better
@@ -73,7 +74,18 @@ class Classifier:
 
     def predict(self, x: Tensor):
         """
-        to be implemented by concrete classifiers
+        prediction algorithm for the input tensor
+        :param x:
+        :return:
+        """
+        return self._pred(x)
+
+    def train(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def _pred(self, x):
+        """
+        to be implemented by concrete networks
         :param x:
         :return:
         """
@@ -106,7 +118,7 @@ class NNClassifier(Classifier):
         """
         super(NNClassifier, self).__init__(training, validation)
         self.network = model(**network_params).to(self.device)
-        # self.optim = SGD(self.model.parameters(), lr=1e-3, momentum=0.99)
+        # self.optim = SGD(self.network.parameters(), lr=1e-3, momentum=0.99)
         self.optim = Adam(self.network.parameters(), lr=5e-4, betas=(0.9, 0.99), eps=1e-8)
         self.criterion = CrossEntropyLoss()
         self.training_message = 'No training message.'
@@ -191,14 +203,6 @@ class NNClassifier(Classifier):
             self.training_message = s
             print(s)
         return
-
-    def predict(self, x: Tensor):
-        """
-        to be implemented by concrete networks
-        :param x:
-        :return:
-        """
-        return self._pred(x)
 
     def _pred(self, x: Tensor):
         """

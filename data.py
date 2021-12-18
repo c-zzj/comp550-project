@@ -3,11 +3,14 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from torch.utils.data import TensorDataset
+import torch
 from torch import Tensor
 import re
 import transformers
 from transformers import AutoModel, BertTokenizerFast
 import random
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import MultiLabelBinarizer
 
 
 def read_data(raw_data: Path) -> pd.DataFrame:
@@ -15,7 +18,7 @@ def read_data(raw_data: Path) -> pd.DataFrame:
     return df
 
 
-def preprocess(data: Any, pipeline: List[Callable]) -> TensorDataset:
+def preprocess(data: List[Any], pipeline: List[Callable]) -> TensorDataset:
     """
     Apply list of preprocesses to data
     :param data:
@@ -27,7 +30,13 @@ def preprocess(data: Any, pipeline: List[Callable]) -> TensorDataset:
     return data
 
 
-def transform_raw_data(data: Any, pipeline: List[Callable]) -> np.ndarray:
+def ndarray_to_dataset(data: List[np.ndarray]) -> TensorDataset:
+    x = torch.from_numpy(data[0]).float()
+    y = torch.from_numpy(data[1]).float()
+    return TensorDataset(x, y)
+
+
+def transform_raw_data(data: Any, pipeline: List[Callable]) -> List[np.ndarray]:
     """
     Transformation of raw data to be done before splitting train, val, test sets.
     :param data:
@@ -39,85 +48,74 @@ def transform_raw_data(data: Any, pipeline: List[Callable]) -> np.ndarray:
     return data
 
 
-def split_dataset(data: np.ndarray, ratios: Tuple[int] = (8, 1, 1), random_seed: Optional[int] = None) -> Tuple:
+def split_dataset(data: List[np.ndarray], ratios: Tuple[int] = (8, 1, 1), random_seed: Optional[int] = None)\
+        -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
     """
     :param data:
     :param ratios: (training, validation, test) ratio of training, validation, and test sets
-    :return: a 3-tuple, (train, val, test)
+    :return: a tuple of tuples length 3, (train, val, test)
     """
-    data = np.array(data)
     np.random.seed(random_seed)
-    np.random.shuffle(data)
+    perms = [np.random.permutation(part.shape[0]) for part in data]
+    data = [data[i][perms[i]] for i in range(len(data))]
     np.random.seed(None)
-    length = data.shape[0]
 
-    train_ratio, val_ratio = ratios[0] / sum(ratios), ratios[1] / sum(ratios)
-    val_start = int(length * train_ratio)
-    test_start = int(length * (train_ratio + val_ratio))
-    train, val, test = data[:val_start], data[val_start:test_start], data[test_start:]
+    train = []
+    val = []
+    test = []
+    for i in range(len(data)):
+        length = data[i].shape[0]
+        train_ratio, val_ratio = ratios[0] / sum(ratios), ratios[1] / sum(ratios)
+        val_start = int(length * train_ratio)
+        test_start = int(length * (train_ratio + val_ratio))
+        train.append(data[i][:val_start])
+        val.append(data[i][val_start:test_start])
+        test.append(data[i][test_start:])
+
     return train, val, test
 
 
-def prepare_dataset(df):
-    """
-
-    :param df: a dataframe
-    :return: a 2-tuple, (text, labels)
-    """
-    labels = [transform_label(s) for s in df['sentiment']]
-    text = [clean(s) for s in df['tweet']]
-    return text, labels
+def df_to_text_label(data: pd.DataFrame) -> List[np.ndarray]:
+    data = data.to_numpy()
+    return [data[:,1], data[:,2]]
 
 
-def transform_label(s: str) -> np.ndarray:
-    """
-    :param s: a string
-    :return: a numpy array of labels
-    """
-    # d = {'abusive': 0, 'hateful': 1, 'offensive': 2, 'disrespectful': 3, 'fearful': 4}
-    label = np.zeros(5)
-    if 'abusive' in s:
-        label[0] = 1
-    if 'fearful' in s:
-        label[4] = 1
+def transform_label(data: List[np.ndarray]) -> List[np.ndarray]:
+    text = data[0]
 
-    # randomly assign a label
-    if 'hateful' and 'offensive' and 'disrespectful' in s:
-        i = random.randint(0, 2)
-        indices = [1, 2, 3]
-        label[indices[i]] = 1
-    elif 'hateful' and 'offensive' in s:
-        i = random.randint(0, 1)
-        indices = [1, 2]
-        label[indices[i]] = 1
-    elif 'hateful' and 'disrespectful' in s:
-        i = random.randint(0, 1)
-        indices = [1, 3]
-        label[indices[i]] = 1
-    elif 'offensive' and 'disrespectful' in s:
-        i = random.randint(0, 1)
-        indices = [2, 3]
-        label[indices[i]] = 1
-    elif 'hateful' in s:
-        label[1] = 1
-    elif 'offensive' in s:
-        label[2] = 1
-    elif 'disrespectful' in s:
-        label[3] = 1
-        
-    return label
+    labeler = MultiLabelBinarizer()
+    labels = [s.split('_') for s in data[1]]
+    labels = labeler.fit_transform(labels)
+    return [text, labels]
 
 
-def clean(s: str) -> str:
-    """
-    :param s: a string
-    :return:
-    """
-    s = s.replace("@user", "")
-    s = s.replace("@URL", "")
-    s = s.lower()
-    s = re.sub('[^a-z]', ' ', s)
-    return s
+def clean_text(data: List[np.ndarray]) -> List[np.ndarray]:
+    def transform(s: str) -> str:
+        s = s.replace("@user", "")
+        s = s.replace("@URL", "")
+        s = s.lower()
+        s = re.sub('[^a-z]', ' ', s)
+        return s
+
+    text = np.array([transform(s) for s in data[0]])
+    labels = data[1]
+    return [text, labels]
+
+
+_TFIDFVEC = TfidfVectorizer()
+
+
+def GetTfidfVectorizer(train: bool = False, max_features: int = 6000) -> Callable:
+    _TFIDFVEC.max_features = max_features
+
+    def vectorize_tfidf(data: List[np.ndarray]) -> List[np.ndarray]:
+        if train:
+            _TFIDFVEC.fit(data[0])
+        text = _TFIDFVEC.transform(data[0]).toarray()
+        labels = data[1]
+        return [text, labels]
+
+    return vectorize_tfidf
 
 
 def to_embedding_bert(text_set: np.ndarray) -> transformers.tokenization_utils_base.BatchEncoding:
@@ -132,13 +130,3 @@ def to_embedding_bert(text_set: np.ndarray) -> transformers.tokenization_utils_b
         return_token_type_ids=False
     )
     return tokens
-
-
-
-
-
-
-
-
-
-
