@@ -92,6 +92,13 @@ def transform_label(s: str) -> str:
         i = random.randint(0, 1)
         indices = [2, 3]
         label[indices[i]] = 1
+    elif 'hateful' in s:
+        label[1] = 1
+    elif 'offensive' in s:
+        label[2] = 1
+    elif 'disrespectful' in s:
+        label[3] = 1
+        
     return label
 
 
