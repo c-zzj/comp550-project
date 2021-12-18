@@ -28,6 +28,12 @@ def preprocess(data: Any, pipeline: List[Callable]) -> TensorDataset:
 
 
 def transform_raw_data(data: Any, pipeline: List[Callable]) -> np.ndarray:
+    """
+    Transformation of raw data to be done before splitting train, val, test sets.
+    :param data:
+    :param pipeline:
+    :return:
+    """
     for step in pipeline:
         data = step(data)
     return data
@@ -63,7 +69,7 @@ def prepare_dataset(df):
     return text, labels
 
 
-def transform_label(s: str) -> str:
+def transform_label(s: str) -> np.ndarray:
     """
     :param s: a string
     :return: a numpy array of labels
@@ -100,7 +106,6 @@ def transform_label(s: str) -> str:
         label[3] = 1
         
     return label
-
 
 
 def clean(s: str) -> str:

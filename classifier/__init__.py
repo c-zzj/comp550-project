@@ -108,7 +108,7 @@ class NNClassifier(Classifier):
         self.network = model(**network_params).to(self.device)
         # self.optim = SGD(self.model.parameters(), lr=1e-3, momentum=0.99)
         self.optim = Adam(self.network.parameters(), lr=5e-4, betas=(0.9, 0.99), eps=1e-8)
-        self.loss = CrossEntropyLoss()
+        self.criterion = CrossEntropyLoss()
         self.training_message = 'No training message.'
         # temporary variable used for plugins to communicate
         self._tmp = {}
@@ -129,8 +129,8 @@ class NNClassifier(Classifier):
     def set_optimizer(self, optimizer: OptimizerProfile):
         self.optim = optimizer.optim(self.network.parameters(), **optimizer.params)
 
-    def set_loss(self, loss: Callable):
-        self.loss = loss
+    def set_criterion(self, criterion: Callable):
+        self.criterion = criterion
 
     def train(self,
               epochs: int,
@@ -171,9 +171,8 @@ class NNClassifier(Classifier):
                 self.optim.zero_grad()
 
                 # forward + backward + optimize
-                self.loss.zero_grad()
                 outputs = self.network(inputs.float())
-                loss = self.loss(outputs, labels)
+                loss = self.criterion(outputs, labels)
                 loss.backward()
                 self.optim.step()
             if verbose:
