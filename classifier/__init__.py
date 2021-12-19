@@ -208,6 +208,7 @@ class NNClassifier(Classifier):
     def _pred(self, x: Tensor):
         """
         argmax prediction - use the highest value as prediction
+        by default, designed for multi-label tasks
         :param x:
         :return:
         """

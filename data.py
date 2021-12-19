@@ -11,11 +11,10 @@ from transformers import AutoModel, BertTokenizerFast
 import random
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MultiLabelBinarizer
-
-
-def read_data(raw_data: Path) -> pd.DataFrame:
-    df = pd.read_csv(raw_data)
-    return df
+from sklearn.preprocessing import LabelEncoder
+from nltk.stem import SnowballStemmer
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 
 
 def preprocess(data: List[Any], pipeline: List[Callable]) -> TensorDataset:
@@ -80,7 +79,7 @@ def df_to_text_label(data: pd.DataFrame) -> List[np.ndarray]:
     return [data[:,1], data[:,2]]
 
 
-def transform_label(data: List[np.ndarray]) -> List[np.ndarray]:
+def transform_label_multilabel(data: List[np.ndarray]) -> List[np.ndarray]:
     text = data[0]
 
     labeler = MultiLabelBinarizer()
@@ -88,6 +87,46 @@ def transform_label(data: List[np.ndarray]) -> List[np.ndarray]:
     labels = labeler.fit_transform(labels)
     return [text, labels]
 
+
+def transform_label_multiclass(data: List[np.ndarray]) -> List[np.ndarray]:
+    text = data[0]
+
+    labeler = LabelEncoder()
+    labels = [s for s in data[1]]
+    labels = labeler.fit_transform(labels)
+    return [text, labels]
+
+
+def GetWordProcessor(type=0) -> Callable[[List[np.ndarray]],List[np.ndarray]]:
+    '''
+    0 - remove stopwords, 1 - stemming, 2 - lemmatization
+    :param type:
+    :return:
+    '''
+    if type == 0:
+        stop = stopwords.words('english')
+        def transform(s: str) -> str:
+            s = s.split(' ')
+            s = [w for w in s if w not in stop]
+            return ' '.join(s)
+    elif type == 1:
+        lemmatizer = WordNetLemmatizer()
+        def transform(s: str) -> str:
+            s = s.split(' ')
+            s = [lemmatizer.lemmatize(w) for w in s]
+            return ' '.join(s)
+    else:
+        stemmer = SnowballStemmer('english')
+        def transform(s: str) -> str:
+            s = s.split(' ')
+            s = [stemmer.stem(w) for w in s]
+            return ' '.join(s)
+
+    def processor(data: List[np.ndarray]) -> List[np.ndarray]:
+        text = np.array([transform(s) for s in data[0]])
+        labels = data[1]
+        return [text, labels]
+    return processor
 
 def clean_text(data: List[np.ndarray]) -> List[np.ndarray]:
     def transform(s: str) -> str:

@@ -80,4 +80,24 @@ class ChainLogisticRegressionClassifier(Classifier):
         return result
 
 
+class MultiClassLogisticRegression(Module):
+    def __init__(self, in_size, num_classes):
+        super(MultiClassLogisticRegression, self).__init__()
+        self.linear = torch.nn.Linear(in_size, num_classes)
 
+    def forward(self, x):
+        output = self.linear(x)
+        return output
+
+
+class MultiClassLogisticRegressionClassifier(NNClassifier):
+    def __init__(self,
+                 training: TensorDataset,
+                 validation: TensorDataset,
+                 in_size,
+                 num_classes
+                 ):
+        super(MultiClassLogisticRegressionClassifier, self).__init__(MultiClassLogisticRegression, training, validation,
+                                                           {'in_size': in_size, 'num_classes': num_classes})
+        self.optim = SGD(self.network.parameters(), lr=1e-3, momentum=0.99)
+        self.criterion = CrossEntropyLoss()
