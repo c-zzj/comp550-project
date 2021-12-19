@@ -102,7 +102,7 @@ def clean_text(data: List[np.ndarray]) -> List[np.ndarray]:
     return [text, labels]
 
 
-def GetCharListConverter(length: int = 800,
+def GetCharListConverter(num_chars: int = 800,
                          alphabet: Optional[str] = None,
                          include_upper: bool = False) -> Callable:
     letters_lower = 'abcdefghijklmnopqrstuvwxyz'
@@ -120,10 +120,10 @@ def GetCharListConverter(length: int = 800,
             s = s.encode('ascii', 'ignore')
             s = s.decode()
             s = list(s)
-            vec = np.zeros(length, len(alphabet))
-            for i in range(min(length, len(s))):
+            vec = np.zeros((len(alphabet), num_chars))
+            for i in range(min(num_chars, len(s))):
                 if s[i] in alphabet:
-                    vec[i][alphabet[s[i]]] = 1
+                    vec[alphabet[s[i]]][i] = 1
             return vec
 
         text = np.array([transform(s) for s in data[0]])

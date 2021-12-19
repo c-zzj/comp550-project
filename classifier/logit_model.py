@@ -34,7 +34,6 @@ class LogisticRegressionClassifier(NNClassifier):
         self.network.eval()
         with torch.no_grad():
             pred = self.network(x.float())
-            pred[:,0] = (torch.sigmoid(pred[:,0]) > 0.5).to(torch.int)
             pred = (torch.sigmoid(pred) > 0.5).to(torch.int)
         self.network.train()
 

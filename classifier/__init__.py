@@ -118,8 +118,9 @@ class NNClassifier(Classifier):
         """
         super(NNClassifier, self).__init__(training, validation)
         self.network = model(**network_params).to(self.device)
-        # self.optim = SGD(self.network.parameters(), lr=1e-3, momentum=0.99)
-        self.optim = Adam(self.network.parameters(), lr=5e-4, betas=(0.9, 0.99), eps=1e-8)
+        self._sgd = SGD(self.network.parameters(), lr=1e-3, momentum=0.99)
+        self._adam = Adam(self.network.parameters(), lr=5e-4, betas=(0.9, 0.99), eps=1e-8)
+        self.optim = self._sgd
         self.criterion = CrossEntropyLoss()
         self.training_message = 'No training message.'
         # temporary variable used for plugins to communicate

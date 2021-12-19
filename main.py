@@ -1,4 +1,5 @@
-from classifier.LogisticRegression import *
+from classifier.logit_model import *
+from classifier.char_cnn import *
 from classifier.metric import *
 from classifier.plugin import *
 
@@ -68,14 +69,14 @@ def run_baseline():
         PrintTrainValPerformance(Accuracy()),
         ElapsedTime(),
               ]
-    train_model(logit, fname='logit', epochs=10, plugins=plugins)
+    train_model(logit, fname='logit', epochs=5, plugins=plugins)
 
 
 def run_char_cnn():
     raw = read_data(RAW_DATASET_PATH)
     p1 = [
         df_to_text_label,
-        GetCharListConverter(),
+        GetCharListConverter(num_chars=800,),
         transform_label,
     ]
     transformed_data = transform_raw_data(raw, p1)
@@ -85,9 +86,27 @@ def run_char_cnn():
         ndarray_to_dataset
     ]
     train, val = preprocess(train, p2), preprocess(val, p2)
-    logit = ChainLogisticRegressionClassifier(training=train, validation=val, in_size=8000, num_labels=6)
-    train_model(logit, fname='logit', epochs=10)
+    charcnn = CharCNNClassifier(training=train, validation=val, num_chars=800, alphabet_size=68, num_labels=6)
+    model_path = Path(TRAINED_MODELS_PATH / 'char-cnn')
+    plugins = [
+        CalcTrainValPerformance(F1Score('micro')),
+        PrintTrainValPerformance(F1Score('micro')),
+        LogTrainValPerformance(F1Score('micro')),
+
+        CalcTrainValPerformance(F1Score()),
+        PrintTrainValPerformance(F1Score()),
+        LogTrainValPerformance(F1Score()),
+
+        CalcTrainValPerformance(Accuracy()),
+        PrintTrainValPerformance(Accuracy()),
+        LogTrainValPerformance(Accuracy()),
+
+        SaveTrainingMessage(model_path),
+        ElapsedTime(),
+    ]
+    train_model(charcnn, fname='char-cnn', epochs=10, plugins=plugins)
 
 
 if __name__ == '__main__':
     run_baseline()
+    # run_char_cnn()
