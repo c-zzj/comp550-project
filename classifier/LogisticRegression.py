@@ -2,6 +2,7 @@ from classifier import *
 from torch.nn import BCEWithLogitsLoss
 from classifier.metric import *
 
+
 class LogisticRegression(Module):
     def __init__(self, in_size):
         super(LogisticRegression, self).__init__()

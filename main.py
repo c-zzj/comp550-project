@@ -14,17 +14,17 @@ def train_model(classifier: Union[Callable[..., Classifier], Classifier],
                 clf_params: Optional[Dict[str, Any]] = None,
                 epochs: int = 100,
                 continue_from: int = 0,
-                batch_size: int = 100):
+                batch_size: int = 100,
+                plugins: Optional[List[TrainingPlugin]] = None):
 
     model_path = Path(TRAINED_MODELS_PATH / fname)
 
     if not isinstance(classifier, Classifier):
         classifier = classifier(**clf_params)
 
-    classifier.train(epochs,
-              batch_size=batch_size,
-              plugins=[
-                  calc_train_val_performance(F1Score()),
+    if plugins is None:
+        plugins = [
+                  CalcTrainValPerformance(F1Score()),
                   SaveGoodModels(model_path, F1Score()),
                   PrintTrainValPerformance(F1Score()),
                   LogTrainValPerformance(F1Score()),
@@ -33,12 +33,15 @@ def train_model(classifier: Union[Callable[..., Classifier], Classifier],
                                           save=True),
                   SaveTrainValPerformance(model_path, F1Score()),
                   ElapsedTime(),
-              ],
+              ]
+    classifier.train(epochs,
+              batch_size=batch_size,
+              plugins=plugins,
               start_epoch=continue_from + 1
               )
 
 
-if __name__ == '__main__':
+def run_baseline():
     raw = read_data(RAW_DATASET_PATH)
     p1 = [
         df_to_text_label,
@@ -46,7 +49,6 @@ if __name__ == '__main__':
         transform_label,
     ]
     transformed_data = transform_raw_data(raw, p1)
-
     split = split_dataset(transformed_data)
     train, val, test = split[0], split[1], split[2]
     p2_train = [
@@ -60,5 +62,32 @@ if __name__ == '__main__':
     train = preprocess(train, p2_train)
     val = preprocess(val, p2)
     logit = ChainLogisticRegressionClassifier(training=train, validation=val, in_size=8000, num_labels=6)
+    plugins = [
+        PrintTrainValPerformance(F1Score('micro')),
+        PrintTrainValPerformance(F1Score('macro')),
+        PrintTrainValPerformance(Accuracy()),
+        ElapsedTime(),
+              ]
+    train_model(logit, fname='logit', epochs=10, plugins=plugins)
 
-    train_model(logit, fname='logit', epochs=20)
+
+def run_char_cnn():
+    raw = read_data(RAW_DATASET_PATH)
+    p1 = [
+        df_to_text_label,
+        GetCharListConverter(),
+        transform_label,
+    ]
+    transformed_data = transform_raw_data(raw, p1)
+    split = split_dataset(transformed_data)
+    train, val, test = split[0], split[1], split[2]
+    p2 = [
+        ndarray_to_dataset
+    ]
+    train, val = preprocess(train, p2), preprocess(val, p2)
+    logit = ChainLogisticRegressionClassifier(training=train, validation=val, in_size=8000, num_labels=6)
+    train_model(logit, fname='logit', epochs=10)
+
+
+if __name__ == '__main__':
+    run_baseline()

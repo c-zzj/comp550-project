@@ -102,6 +102,38 @@ def clean_text(data: List[np.ndarray]) -> List[np.ndarray]:
     return [text, labels]
 
 
+def GetCharListConverter(length: int = 800,
+                         alphabet: Optional[str] = None,
+                         include_upper: bool = False) -> Callable:
+    letters_lower = 'abcdefghijklmnopqrstuvwxyz'
+    letter_upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    numbers = '0123456789'
+    symbols = ',;.!?:\'\"/\\|_@#$%^&*~`+-=<>()[]{}'
+    if alphabet is None:
+        alphabet = letters_lower + numbers + symbols
+        if include_upper:
+            alphabet += letter_upper
+    alphabet = dict(zip(alphabet, range(len(alphabet))))
+
+    def convert_to_charlist(data: List[np.ndarray]) -> List[np.ndarray]:
+        def transform(s: str) -> np.ndarray:
+            s = s.encode('ascii', 'ignore')
+            s = s.decode()
+            s = list(s)
+            vec = np.zeros(length, len(alphabet))
+            for i in range(min(length, len(s))):
+                if s[i] in alphabet:
+                    vec[i][alphabet[s[i]]] = 1
+            return vec
+
+        text = np.array([transform(s) for s in data[0]])
+        labels = data[1]
+        return [text, labels]
+
+    return convert_to_charlist
+
+
+
 _TFIDFVEC = TfidfVectorizer()
 
 

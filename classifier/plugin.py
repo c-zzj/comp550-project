@@ -92,7 +92,7 @@ def ElapsedTime(print_to_console: bool = True, log: bool = True, step: int = 1) 
     return plugin
 
 
-def calc_train_val_performance(metric: Metric, batch_size: int = 300, step: int = 1) -> TrainingPlugin:
+def CalcTrainValPerformance(metric: Metric, batch_size: int = 300, step: int = 1) -> TrainingPlugin:
     """
 
     :param metric:
