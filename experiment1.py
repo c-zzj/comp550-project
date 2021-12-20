@@ -2,42 +2,22 @@ from classifier.logit_model import *
 from classifier.char_cnn import *
 from classifier.metric import *
 from classifier.plugin import *
+from util import *
 
 RAW_DATASET_PATH = Path('hate_speech_mlma/en_dataset_with_stop_words.csv')
 
 TRAINED_MODELS_PATH = Path("trained-models-d1")
 
 
-def train_model_1(classifier: Union[Callable[..., Classifier], Classifier],
-                  fname: str,
-                  clf_params: Optional[Dict[str, Any]] = None,
-                  epochs: int = 100,
-                  continue_from: int = 0,
-                  batch_size: int = 100,
-                  plugins: Optional[List[TrainingPlugin]] = None):
+def df_to_text_label(data: pd.DataFrame) -> List[np.ndarray]:
+    data = data.to_numpy()
+    return [data[:, 1], data[:, 2]]
 
-    model_path = Path(TRAINED_MODELS_PATH / fname)
 
-    if not isinstance(classifier, Classifier):
-        classifier = classifier(**clf_params)
-
-    if plugins is None:
-        plugins = [
-                  CalcTrainValPerformance(F1Score()),
-                  SaveGoodModels(model_path, F1Score()),
-                  PrintTrainValPerformance(F1Score()),
-                  LogTrainValPerformance(F1Score()),
-                  SaveTrainingMessage(model_path),
-                  PlotTrainValPerformance(model_path, 'Model', F1Score(), show=False,
-                                          save=True),
-                  SaveTrainValPerformance(model_path, F1Score()),
-                  ElapsedTime(),
-              ]
-    classifier.train(epochs,
-              batch_size=batch_size,
-              plugins=plugins,
-              start_epoch=continue_from + 1
-              )
+def ndarray_to_dataset(data: List[np.ndarray]) -> TensorDataset:
+    x = torch.from_numpy(data[0]).float()
+    y = torch.from_numpy(data[1]).float()
+    return TensorDataset(x, y)
 
 
 def run_baseline_1():
@@ -67,7 +47,8 @@ def run_baseline_1():
         PrintTrainValPerformance(Accuracy()),
         ElapsedTime(),
               ]
-    train_model_1(logit, fname='logit', epochs=5, plugins=plugins)
+    model_path = Path(TRAINED_MODELS_PATH / 'logit')
+    train_model(logit, model_path=model_path, epochs=5, plugins=plugins)
 
 
 def run_char_cnn_1():
@@ -102,4 +83,4 @@ def run_char_cnn_1():
         SaveTrainingMessage(model_path),
         ElapsedTime(),
     ]
-    train_model_1(charcnn, fname='char-cnn', epochs=10, plugins=plugins)
+    train_model(charcnn, model_path=model_path, epochs=10, plugins=plugins)

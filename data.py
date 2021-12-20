@@ -34,12 +34,6 @@ def preprocess(data: List[Any], pipeline: List[Callable]) -> TensorDataset:
     return data
 
 
-def ndarray_to_dataset(data: List[np.ndarray]) -> TensorDataset:
-    x = torch.from_numpy(data[0]).float()
-    y = torch.from_numpy(data[1]).float()
-    return TensorDataset(x, y)
-
-
 def transform_raw_data(data: Any, pipeline: List[Callable]) -> List[np.ndarray]:
     """
     Transformation of raw data to be done before splitting train, val, test sets.
@@ -52,17 +46,15 @@ def transform_raw_data(data: Any, pipeline: List[Callable]) -> List[np.ndarray]:
     return data
 
 
-def split_dataset(data: List[np.ndarray], ratios: Tuple[int] = (8, 1, 1), random_seed: Optional[int] = None) \
+def split_dataset(data: List[np.ndarray], ratios: Tuple[int] = (8, 1, 1)) \
         -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
     """
     :param data:
     :param ratios: (training, validation, test) ratio of training, validation, and test sets
     :return: a tuple of tuples length 3, (train, val, test)
     """
-    np.random.seed(random_seed)
     perms = [np.random.permutation(part.shape[0]) for part in data]
     data = [data[i][perms[i]] for i in range(len(data))]
-    np.random.seed(None)
 
     train = []
     val = []
@@ -79,12 +71,8 @@ def split_dataset(data: List[np.ndarray], ratios: Tuple[int] = (8, 1, 1), random
     return train, val, test
 
 
-def df_to_text_label(data: pd.DataFrame) -> List[np.ndarray]:
-    data = data.to_numpy()
-    return [data[:, 1], data[:, 2]]
-
-
 def transform_label_multilabel(data: List[np.ndarray]) -> List[np.ndarray]:
+
     text = data[0]
 
     labeler = MultiLabelBinarizer()
@@ -327,10 +315,23 @@ def add_word(new_words):
     new_words.insert(random_idx, random_synonym)
 
 
-def eda(data, alpha_sr, alpha_ri, alpha_rs, p_rd, num_aug):
-    df = data[1].values.tolist()
-    label = data[0].values.tolist()
-    for sentence in df:
+def eda(data, percentage_sr, percentage_ri, percentage_rs, percentage_rd, num_aug):
+    """
+    
+    :param data: input data
+    :param percentage_sr: percentage of words to be replaced by their synonym
+    :param percentage_ri: proportion of random new words to be added in each sentence
+    :param percentage_rs: percentage of words to be randomly swapped
+    :param percentage_rd: percentage of words to be randomly deleted
+    :param num_aug: number of new sentences generated for each sentence
+    :return: 
+    """
+    text = data[0]
+    label = data[1]
+    new_text = []
+    new_label = []
+    for i in range(len(text)):
+        sentence = text[i]
         sentence = get_only_chars(sentence)
         words = sentence.split(' ')
         words = [word for word in words if word is not '']
@@ -340,30 +341,30 @@ def eda(data, alpha_sr, alpha_ri, alpha_rs, p_rd, num_aug):
         num_new_per_technique = int(num_aug / 4) + 1
 
         # sr
-        if (alpha_sr > 0):
-            n_sr = max(1, int(alpha_sr * num_words))
+        if (percentage_sr > 0):
+            n_sr = max(1, int(percentage_sr * num_words))
             for _ in range(num_new_per_technique):
                 a_words = synonym_replacement(words, n_sr)
                 augmented_sentences.append(' '.join(a_words))
 
         # ri
-        if (alpha_ri > 0):
-            n_ri = max(1, int(alpha_ri * num_words))
+        if (percentage_ri > 0):
+            n_ri = max(1, int(percentage_ri * num_words))
             for _ in range(num_new_per_technique):
                 a_words = random_insertion(words, n_ri)
                 augmented_sentences.append(' '.join(a_words))
 
         # rs
-        if (alpha_rs > 0):
-            n_rs = max(1, int(alpha_rs * num_words))
+        if (percentage_rs > 0):
+            n_rs = max(1, int(percentage_rs * num_words))
             for _ in range(num_new_per_technique):
                 a_words = random_swap(words, n_rs)
                 augmented_sentences.append(' '.join(a_words))
 
         # rd
-        if (p_rd > 0):
+        if (percentage_rd > 0):
             for _ in range(num_new_per_technique):
-                a_words = random_deletion(words, p_rd)
+                a_words = random_deletion(words, percentage_rd)
                 augmented_sentences.append(' '.join(a_words))
 
         augmented_sentences = [get_only_chars(sentence) for sentence in augmented_sentences]
@@ -377,10 +378,34 @@ def eda(data, alpha_sr, alpha_ri, alpha_rs, p_rd, num_aug):
             augmented_sentences = [s for s in augmented_sentences if random.uniform(0, 1) < keep_prob]
 
         # append the original sentence
-        for lab in label:
-            for sent in augmented_sentences:
-                to_append = [lab, sent]
-                df_length = len(df)
-                df.loc[df_length] = to_append
+        new_text += augmented_sentences
+        new_label += [label[j] for j in range(len(augmented_sentences))]
 
-    return df
+    return [np.array(new_text), np.array(new_label)]
+
+
+def GetAugmenter(percentage_sr: float,
+                 percentage_ri: float,
+                 percentage_rs: float,
+                 percentage_rd: float,
+                 num_aug: int,
+                 target_path: Optional[str] = None,):
+    """
+    :param percentage_sr: percentage of words to be replaced by their synonym
+    :param percentage_ri: proportion of random new words to be added in each sentence
+    :param percentage_rs: percentage of words to be randomly swapped
+    :param percentage_rd: percentage of words to be randomly deleted
+    :param num_aug: number of new sentences generated for each sentence
+    :param target_path: target path to save augmented data
+    :return:
+    """
+    def augment_data(data: List[np.ndarray]) -> List[np.ndarray]:
+        if target_path is not None and Path(target_path).exists():
+            loaded = np.load(target_path)
+            augmented = [loaded['text'], loaded['label']]
+        else:
+            augmented = eda(data, percentage_sr, percentage_ri, percentage_rs, percentage_rd, num_aug)
+            if target_path is not None:
+                np.savez_compressed(target_path, text=augmented[0], label=augmented[1])
+        return augmented
+    return augment_data
