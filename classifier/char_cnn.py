@@ -2,7 +2,7 @@ from classifier import *
 from torch.nn import BCEWithLogitsLoss
 from classifier.metric import *
 from torch import nn
-
+from acon import *
 
 class CharCNN(Module):
     def __init__(self, num_chars: int, alphabet_size: int, num_output: int):
@@ -16,31 +16,37 @@ class CharCNN(Module):
 
         self.conv = nn.Sequential(
             nn.Conv1d(alphabet_size, channel_size, kernel_sizes[0]),
-            nn.MaxPool1d(3, 3),
-            nn.ReLU(inplace=True),
+            nn.MaxPool1d(3),
+            AconC(channel_size),
             nn.Conv1d(channel_size, channel_size, kernel_sizes[1]),
-            nn.MaxPool1d(3, 3),
-            nn.ReLU(inplace=True),
+            nn.MaxPool1d(3),
+            AconC(channel_size),
             nn.Conv1d(channel_size, channel_size, kernel_sizes[2]),
-            nn.ReLU(inplace=True),
+            AconC(channel_size),
             nn.Conv1d(channel_size, channel_size, kernel_sizes[3]),
-            nn.ReLU(inplace=True),
+            AconC(channel_size),
             nn.Conv1d(channel_size, channel_size, kernel_sizes[4]),
-            nn.ReLU(inplace=True),
+            AconC(channel_size),
             nn.Conv1d(channel_size, channel_size, kernel_sizes[5]),
-            nn.MaxPool1d(3, 3),
-            nn.ReLU(inplace=True),
+            nn.MaxPool1d(3),
+            AconC(channel_size),
         )
 
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
             nn.Linear(channel_size * 26, 1024),
-            nn.ReLU(inplace=True),
+            AconC_FC(),
             nn.Dropout(p=0.5),
             nn.Linear(1024, 1024),
-            nn.ReLU(inplace=True),
+            AconC_FC(),
             nn.Linear(1024, num_output),
         )
+        self._random_initalize()
+
+    def _random_initalize(self, mean=0.0, std=0.05):
+        for module in self.modules():
+            if isinstance(module, nn.Conv1d) or isinstance(module, nn.Linear):
+                module.weight.data.normal_(mean, std)
 
     def forward(self, x):
         x = self.conv(x)
@@ -60,7 +66,6 @@ class MultiLabelCharCNNClassifier(NNClassifier):
                                                           {'num_chars': num_chars,
                                                            'alphabet_size': alphabet_size,
                                                            'num_output': num_labels})
-
         self.optim = self._adam
         self.criterion = BCEWithLogitsLoss()
 
@@ -91,6 +96,5 @@ class MultiClassCharCNNClassifier(NNClassifier):
                                                           {'num_chars': num_chars,
                                                            'alphabet_size': alphabet_size,
                                                            'num_output': num_classes})
-
         self.optim = self._adam
         self.criterion = CrossEntropyLoss()

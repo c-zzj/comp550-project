@@ -7,14 +7,14 @@ from util import *
 from sklearn.linear_model import LogisticRegression as LR
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 
-RAW_DATASET_PATH = Path('hate_speech_mlma/en_dataset_with_stop_words.csv')
+RAW_DATASET_PATH = Path('english_dataset/english_dataset_all.tsv')
 
-TRAINED_MODELS_PATH = Path("trained-models-d1")
+TRAINED_MODELS_PATH = Path("trained-models-d3")
 
 
 def df_to_text_label(data: pd.DataFrame) -> List[np.ndarray]:
     data = data.to_numpy()
-    return [data[:, 1], data[:, 3]]
+    return [data[:, 1], data[:, 2]]
 
 
 def ndarray_to_dataset(data: List[np.ndarray]) -> TensorDataset:
@@ -23,8 +23,8 @@ def ndarray_to_dataset(data: List[np.ndarray]) -> TensorDataset:
     return TensorDataset(x, y)
 
 
-def run_baseline_1(epochs: int = 2, get_test: bool = False):
-    raw = pd.read_csv(RAW_DATASET_PATH)
+def run_baseline_3(epochs: int = 2):
+    raw = pd.read_csv(RAW_DATASET_PATH, sep='\t')
     p1 = [
         df_to_text_label,
         clean_text,
@@ -48,12 +48,9 @@ def run_baseline_1(epochs: int = 2, get_test: bool = False):
         ndarray_to_dataset
     ]
     train, val, test = preprocess(train, p2_train), preprocess(val, p2), preprocess(test, p2)
-    clf = LogisticRegressionClassifier(training=train, validation=val, in_size=8000)
+    logit = LogisticRegressionClassifier(training=train, validation=val, in_size=8000)
     model_path = Path(TRAINED_MODELS_PATH / 'logit')
-    if get_test:
-        clf.load_network(model_path, epochs)
-    else:
-        clf = train_model(clf, model_path=model_path, epochs=epochs)
+    clf = train_model(logit, model_path=model_path, epochs=epochs)
     micro = clf.evaluate(test, F1Score('micro'))
     macro = clf.evaluate(test, F1Score())
     acc = clf.evaluate(test, Accuracy())
@@ -63,11 +60,12 @@ def run_baseline_1(epochs: int = 2, get_test: bool = False):
     print(f"Accuracy: {acc}")
 
 
-def run_char_cnn_1(preprocessing: List[int] = [],
+def run_char_cnn_3(preprocessing: List[int] = [],
                    augmentation: Dict[str, Any] = None,
                    epochs: int = 2,
-                   get_test: bool = False):
-    raw = pd.read_csv(RAW_DATASET_PATH)
+                   get_test: bool = False
+                   ):
+    raw = pd.read_csv(RAW_DATASET_PATH, sep='\t')
     p1 = [df_to_text_label,
           transform_label_multiclass,
           to_ascii]
@@ -109,11 +107,11 @@ def run_char_cnn_1(preprocessing: List[int] = [],
     print(f"Accuracy: {acc}")
 
 
-def run_word_cnn_1(preprocessing: List[int] = [],
+def run_word_cnn_3(preprocessing: List[int] = [],
                    augmentation: Dict[str, Any] = None,
                    epochs: int = 2,
                    get_test: bool = False):
-    raw = pd.read_csv(RAW_DATASET_PATH)
+    raw = pd.read_csv(RAW_DATASET_PATH, sep='\t')
     p1 = [
         df_to_text_label,
         clean_text,
@@ -146,6 +144,7 @@ def run_word_cnn_1(preprocessing: List[int] = [],
         clf.load_network(model_path, epochs)
     else:
         clf = train_model(clf, model_path=model_path, epochs=epochs)
+
     micro = clf.evaluate(test, F1Score('micro'))
     macro = clf.evaluate(test, F1Score())
     acc = clf.evaluate(test, Accuracy())
@@ -153,3 +152,5 @@ def run_word_cnn_1(preprocessing: List[int] = [],
     print(f"F1-micro: {micro}")
     print(f"F1-macro: {macro}")
     print(f"Accuracy: {acc}")
+
+

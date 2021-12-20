@@ -142,23 +142,44 @@ def clean_text(data: List[np.ndarray]) -> List[np.ndarray]:
     return [text, labels]
 
 
+def display_char_length_stats(data: List[np.ndarray]) -> List[np.ndarray]:
+    text = data[0]
+    lengths = []
+    for s in text:
+        lengths.append(len(s))
+
+    print(f'Largest length of characters: {max(lengths)}')
+    print(f'Mean length of characters: {np.mean(lengths)}')
+    print(f'STD length of characters: {np.std(lengths,)}')
+    return data
+
+
+def to_ascii(data: List[np.ndarray]) -> List[np.ndarray]:
+    def transform(s: str) -> str:
+        s = s.encode('ascii', 'ignore')
+        return s.decode()
+    text = np.array([transform(s) for s in data[0]])
+    labels = data[1]
+    return [text, labels]
+
+
 def GetCharListConverter(num_chars: int = 800,
                          alphabet: Optional[str] = None,
-                         include_upper: bool = False) -> Callable:
+                         to_lower: bool = True) -> Callable:
     letters_lower = 'abcdefghijklmnopqrstuvwxyz'
     letter_upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     numbers = '0123456789'
     symbols = ',;.!?:\'\"/\\|_@#$%^&*~`+-=<>()[]{}'
     if alphabet is None:
         alphabet = letters_lower + numbers + symbols
-        if include_upper:
+        if not to_lower:
             alphabet += letter_upper
     alphabet = dict(zip(alphabet, range(len(alphabet))))
 
     def convert_to_charlist(data: List[np.ndarray]) -> List[np.ndarray]:
         def transform(s: str) -> np.ndarray:
-            s = s.encode('ascii', 'ignore')
-            s = s.decode()
+            if to_lower:
+                s = s.lower()
             s = list(s)
             vec = np.zeros((len(alphabet), num_chars))
             for i in range(min(num_chars, len(s))):
@@ -202,28 +223,7 @@ def to_embedding_bert(text_set: np.ndarray) -> transformers.tokenization_utils_b
     )
     return tokens
 
-
-def get_only_chars(line):
-    clean_line = ""
-
-    line = line.replace("’", "")
-    line = line.replace("'", "")
-    line = line.replace("-", " ")
-    line = line.replace("\t", " ")
-    line = line.replace("\n", " ")
-    line = line.lower()
-
-    for char in line:
-        if char in 'qwertyuiopasdfghjklzxcvbnm ':
-            clean_line += char
-        else:
-            clean_line += ' '
-
-    clean_line = re.sub(' +', ' ', clean_line)  # delete extra spaces
-    if clean_line[0] == ' ':
-        clean_line = clean_line[1:]
-    return clean_line
-
+# region augmentation helpers
 
 def synonym_replacement(words, n):
     new_words = words.copy()
@@ -335,42 +335,39 @@ def eda(data, percentage_sr, percentage_ri, percentage_rs, percentage_rd, num_au
     new_label = []
     for i in range(len(text)):
         sentence = text[i]
-        sentence = get_only_chars(sentence)
         words = sentence.split(' ')
-        words = [word for word in words if word is not '']
+        words = [word for word in words if word != '']
         num_words = len(words)
 
         augmented_sentences = []
-        num_new_per_technique = int(num_aug / 4) + 1
 
         # sr
         if (percentage_sr > 0):
             n_sr = max(1, int(percentage_sr * num_words))
-            for _ in range(num_new_per_technique):
+            for _ in range(num_aug):
                 a_words = synonym_replacement(words, n_sr)
                 augmented_sentences.append(' '.join(a_words))
 
         # ri
         if (percentage_ri > 0):
             n_ri = max(1, int(percentage_ri * num_words))
-            for _ in range(num_new_per_technique):
+            for _ in range(num_aug):
                 a_words = random_insertion(words, n_ri)
                 augmented_sentences.append(' '.join(a_words))
 
         # rs
         if (percentage_rs > 0):
             n_rs = max(1, int(percentage_rs * num_words))
-            for _ in range(num_new_per_technique):
+            for _ in range(num_aug):
                 a_words = random_swap(words, n_rs)
                 augmented_sentences.append(' '.join(a_words))
 
         # rd
         if (percentage_rd > 0):
-            for _ in range(num_new_per_technique):
+            for _ in range(num_aug):
                 a_words = random_deletion(words, percentage_rd)
                 augmented_sentences.append(' '.join(a_words))
 
-        augmented_sentences = [get_only_chars(sentence) for sentence in augmented_sentences]
         shuffle(augmented_sentences)
 
         # trim so that we have the desired number of augmented sentences
@@ -380,25 +377,29 @@ def eda(data, percentage_sr, percentage_ri, percentage_rs, percentage_rd, num_au
             keep_prob = num_aug / len(augmented_sentences)
             augmented_sentences = [s for s in augmented_sentences if random.uniform(0, 1) < keep_prob]
 
-        # append the original sentence
+        # add to new dataset
+        new_text.append(text[i])
+        new_label.append(label[i])
         new_text += augmented_sentences
         new_label += [label[j] for j in range(len(augmented_sentences))]
 
     return [np.array(new_text), np.array(new_label)]
 
+# endregion
 
-def GetAugmenter(percentage_sr: float,
-                 percentage_ri: float,
-                 percentage_rs: float,
-                 percentage_rd: float,
-                 num_aug: int,
-                 target_path: Optional[str] = None,):
+def GetAugmenter(
+                 percentage_sr: float = 0,
+                 percentage_ri: float = 0,
+                 percentage_rs: float = 0,
+                 percentage_rd: float = 0,
+                 num_aug: int = 1,
+                 target_path: Optional[Union[str, Path]] = None,):
     """
     :param percentage_sr: percentage of words to be replaced by their synonym
     :param percentage_ri: proportion of random new words to be added in each sentence
     :param percentage_rs: percentage of words to be randomly swapped
     :param percentage_rd: percentage of words to be randomly deleted
-    :param num_aug: number of new sentences generated for each sentence
+    :param num_aug: number of new sentences generated for each sentence for each method
     :param target_path: target path to save augmented data
     :return:
     """
@@ -409,6 +410,8 @@ def GetAugmenter(percentage_sr: float,
         else:
             augmented = eda(data, percentage_sr, percentage_ri, percentage_rs, percentage_rd, num_aug)
             if target_path is not None:
+                if not target_path.parent.exists():
+                    target_path.parent.mkdir(parents=True)
                 np.savez_compressed(target_path, text=augmented[0], label=augmented[1])
         return augmented
     return augment_data
@@ -419,22 +422,23 @@ def GetWord2VecConverter(length: int = 50):
     if not os.path.isfile('word2vec.d2v'):
         model = api.load("word2vec-google-news-300")
         model.save('word2vec.d2v')
-    embed_lookup = KeyedVectors.load('word2vec.d2v')
+    model = KeyedVectors.load('word2vec.d2v')
 
     def convert_to_word2vec(data: List[np.ndarray]) -> List[np.ndarray]:
         def transform(s: str) -> np.ndarray:
             words = s.split()
-            vec = [embed_lookup[w] for w in words if w in embed_lookup]
+            vec = [model[w] for w in words if w in model]
             if len(vec) == 0:
-                return np.zeros((length - len(vec), 300))
+                return np.zeros((300, length))
             if len(vec) < length:
-                padding = np.zeros((length - len(vec), 300))
-                vec = np.array(vec)
-                vec = np.concatenate((padding, vec), axis=0)
+                padding = np.zeros((300, (length - len(vec))))
+                vec = np.array(vec).transpose()
+                vec = np.concatenate((vec, padding), axis=1)
             else:
-                vec = vec[:length]
+                vec = np.array(vec[:length]).transpose()
             return vec
-        text = np.array([transform(s, 50, embed_lookup) for s in data[0]])
+
+        text = np.array([transform(s) for s in data[0]])
         label = data[1]
         return [text, label]
 

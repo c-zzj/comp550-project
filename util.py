@@ -10,29 +10,35 @@ def train_model(classifier: Union[Callable[..., Classifier], Classifier],
                 epochs: int = 100,
                 continue_from: int = 0,
                 batch_size: int = 100,
-                plugins: Optional[List[TrainingPlugin]] = None):
+                plugins: Optional[List[TrainingPlugin]] = None) -> Classifier:
 
     if not isinstance(classifier, Classifier):
         classifier = classifier(**clf_params)
 
     if plugins is None:
         plugins = [
-                  CalcTrainValPerformance(F1Score()),
-                  SaveGoodModels(model_path, F1Score()),
-                  PrintTrainValPerformance(F1Score()),
-                  LogTrainValPerformance(F1Score()),
-                  SaveTrainingMessage(model_path),
-                  PlotTrainValPerformance(model_path, 'Model', F1Score(), show=False,
-                                          save=True),
-                  SaveTrainValPerformance(model_path, F1Score()),
-                  ElapsedTime(),
+            SaveModel(model_path),
+            CalcTrainValPerformance(F1Score('micro')),
+            PrintTrainValPerformance(F1Score('micro')),
+            LogTrainValPerformance(F1Score('micro')),
+
+            CalcTrainValPerformance(F1Score()),
+            PrintTrainValPerformance(F1Score()),
+            LogTrainValPerformance(F1Score()),
+
+            CalcTrainValPerformance(Accuracy()),
+            PrintTrainValPerformance(Accuracy()),
+            LogTrainValPerformance(Accuracy()),
+
+            SaveTrainingMessage(model_path),
+            ElapsedTime(),
               ]
     classifier.train(epochs,
                      batch_size=batch_size,
                      plugins=plugins,
                      start_epoch=continue_from + 1
                      )
-
+    return classifier
 
 def random_seed_global(seed: Optional[int]):
     np.random.seed(seed)

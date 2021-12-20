@@ -53,9 +53,9 @@ class ChainLogisticRegressionClassifier(Classifier):
         self.num_labels = num_labels
         self.logits = []
         for i in range(self.num_labels):
-            train_y = torch.reshape(self.training.tensors[1][:, i], (-1,1))
+            train_y = torch.reshape(self.training.tensors[1][:, i], (-1, 1))
             train = TensorDataset(self.training.tensors[0], train_y)
-            val_y = torch.reshape(self.validation.tensors[1][:,i], (-1,1))
+            val_y = torch.reshape(self.validation.tensors[1][:, i], (-1, 1))
             val = TensorDataset(self.validation.tensors[0], val_y)
             self.logits.append(LogisticRegressionClassifier(train, val, self.in_size))
 
