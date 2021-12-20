@@ -17,6 +17,9 @@ from sklearn.preprocessing import LabelEncoder
 from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+import os
+from gensim.models import KeyedVectors
+import gensim.downloader as api
 
 nltk.download('wordnet')
 from nltk.corpus import wordnet
@@ -409,3 +412,30 @@ def GetAugmenter(percentage_sr: float,
                 np.savez_compressed(target_path, text=augmented[0], label=augmented[1])
         return augmented
     return augment_data
+
+
+def GetWord2VecConverter(length: int = 50):
+    # load pretrained embedding
+    if not os.path.isfile('word2vec.d2v'):
+        model = api.load("word2vec-google-news-300")
+        model.save('word2vec.d2v')
+    embed_lookup = KeyedVectors.load('word2vec.d2v')
+
+    def convert_to_word2vec(data: List[np.ndarray]) -> List[np.ndarray]:
+        def transform(s: str) -> np.ndarray:
+            words = s.split()
+            vec = [embed_lookup[w] for w in words if w in embed_lookup]
+            if len(vec) == 0:
+                return np.zeros((length - len(vec), 300))
+            if len(vec) < length:
+                padding = np.zeros((length - len(vec), 300))
+                vec = np.array(vec)
+                vec = np.concatenate((padding, vec), axis=0)
+            else:
+                vec = vec[:length]
+            return vec
+        text = np.array([transform(s, 50, embed_lookup) for s in data[0]])
+        label = data[1]
+        return [text, label]
+
+    return convert_to_word2vec
