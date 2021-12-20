@@ -1,0 +1,5 @@
+*
+!*.py
+!classifier
+!README.md
+!.gitignore
