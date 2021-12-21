@@ -34,10 +34,10 @@ def run_baseline_1(epochs: int = 2, get_test: bool = False):
     split = split_dataset(transformed_data)
     train, val, test = split[0], split[1], split[2]
 
-    # ros = RandomOverSampler(random_state=0)
-    # train[0] = np.reshape(train[0], (-1, 1))
-    # train[0], train[1] = ros.fit_resample(train[0], train[1])
-    # train[0] = np.reshape(train[0], (-1,))
+    ros = RandomOverSampler(random_state=0)
+    train[0] = np.reshape(train[0], (-1, 1))
+    train[0], train[1] = ros.fit_resample(train[0], train[1])
+    train[0] = np.reshape(train[0], (-1,))
 
     p2_train = [
         GetTfidfVectorizer(train=True, max_features=8000),
@@ -76,10 +76,10 @@ def run_char_cnn_1(preprocessing: List[int] = [],
     split = split_dataset(transformed_data)
     train, val, test = split[0], split[1], split[2]
 
-    # ros = RandomOverSampler(random_state=0)
-    # train[0] = np.reshape(train[0], (-1, 1))
-    # train[0], train[1] = ros.fit_resample(train[0], train[1])
-    # train[0] = np.reshape(train[0], (-1,))
+    ros = RandomOverSampler(random_state=0)
+    train[0] = np.reshape(train[0], (-1, 1))
+    train[0], train[1] = ros.fit_resample(train[0], train[1])
+    train[0] = np.reshape(train[0], (-1,))
 
     p2_train = []
     p2 = []
@@ -123,10 +123,10 @@ def run_word_cnn_1(preprocessing: List[int] = [],
     split = split_dataset(transformed_data)
     train, val, test = split[0], split[1], split[2]
 
-    # ros = RandomOverSampler(random_state=0)
-    # train[0] = np.reshape(train[0], (-1, 1))
-    # train[0], train[1] = ros.fit_resample(train[0], train[1])
-    # train[0] = np.reshape(train[0], (-1,))
+    ros = RandomOverSampler(random_state=0)
+    train[0] = np.reshape(train[0], (-1, 1))
+    train[0], train[1] = ros.fit_resample(train[0], train[1])
+    train[0] = np.reshape(train[0], (-1,))
 
     p2_train = []
     p2 = []
