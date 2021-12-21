@@ -9,7 +9,7 @@ from torch import nn
 
 # Word CNN from https://github.com/cezannec/CNN_Text_Classification
 
-
+###################################################################
 class WordCNN(nn.Module):
     """An 1D Convulational Neural Network for Sentence Classification."""
 
@@ -94,7 +94,7 @@ class WordCNN(nn.Module):
         logits = self.fc(self.dropout(x_fc))
 
         return logits
-
+###################################################################
 
 class MultiLabelWordCNNClassifier(NNClassifier):
     def __init__(self,
