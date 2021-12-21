@@ -6,7 +6,7 @@ from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 
 RAW_DATASET_PATH = Path('HASOC.tsv')
 
-TRAINED_MODELS_PATH = Path("trained-models-d3")
+TRAINED_MODELS_PATH = Path("trained-models-d2")
 
 
 def df_to_text_label(data: pd.DataFrame) -> List[np.ndarray]:
