@@ -22,7 +22,6 @@ class LogisticRegressionClassifier(NNClassifier):
         super(LogisticRegressionClassifier, self).__init__(LogisticRegression, training, validation,
                                                            {'in_size': in_size})
 
-        self.optim = SGD(self.network.parameters(), lr=1e-3, momentum=0.99)
         self.criterion = BCEWithLogitsLoss()
 
     def _pred(self, x: Tensor):
@@ -99,5 +98,4 @@ class MultiClassLogisticRegressionClassifier(NNClassifier):
                  ):
         super(MultiClassLogisticRegressionClassifier, self).__init__(MultiClassLogisticRegression, training, validation,
                                                            {'in_size': in_size, 'num_classes': num_classes})
-        self.optim = SGD(self.network.parameters(), lr=1e-3, momentum=0.99)
         self.criterion = CrossEntropyLoss()

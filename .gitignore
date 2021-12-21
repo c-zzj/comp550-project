@@ -4,3 +4,5 @@
 !README.md
 !.gitignore
 !results*
+!hate_speech_mlma/en_dataset_with_stop_words.csv
+!english_dataset/english_dataset_all.tsv

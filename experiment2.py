@@ -1,10 +1,7 @@
 from classifier.logit_model import *
 from classifier.char_cnn import *
 from classifier.word2vec_clf import *
-from classifier.metric import *
-from classifier.plugin import *
 from util import *
-from sklearn.linear_model import LogisticRegression as LR
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 
 RAW_DATASET_PATH = Path('english_dataset/english_dataset_all.tsv')
@@ -23,7 +20,7 @@ def ndarray_to_dataset(data: List[np.ndarray]) -> TensorDataset:
     return TensorDataset(x, y)
 
 
-def run_baseline_3(epochs: int = 2):
+def run_baseline_2(epochs: int = 2):
     raw = pd.read_csv(RAW_DATASET_PATH, sep='\t')
     p1 = [
         df_to_text_label,
@@ -60,7 +57,7 @@ def run_baseline_3(epochs: int = 2):
     print(f"Accuracy: {acc}")
 
 
-def run_char_cnn_3(preprocessing: List[int] = [],
+def run_char_cnn_2(preprocessing: List[int] = [],
                    augmentation: Dict[str, Any] = None,
                    epochs: int = 2,
                    get_test: bool = False
@@ -107,7 +104,7 @@ def run_char_cnn_3(preprocessing: List[int] = [],
     print(f"Accuracy: {acc}")
 
 
-def run_word_cnn_3(preprocessing: List[int] = [],
+def run_word_cnn_2(preprocessing: List[int] = [],
                    augmentation: Dict[str, Any] = None,
                    epochs: int = 2,
                    get_test: bool = False):

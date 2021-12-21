@@ -11,30 +11,30 @@ class CharCNN(Module):
         self.num_chars = num_chars
         self.num_labels = num_output
 
-        channel_size = 256
+        self.channel_size = 256
         kernel_sizes = [7, 7, 3, 3, 3, 3]
 
         self.conv = nn.Sequential(
-            nn.Conv1d(alphabet_size, channel_size, kernel_sizes[0]),
+            nn.Conv1d(alphabet_size, self.channel_size, kernel_sizes[0]),
             nn.MaxPool1d(3),
-            AconC(channel_size),
-            nn.Conv1d(channel_size, channel_size, kernel_sizes[1]),
+            AconC(self.channel_size),
+            nn.Conv1d(self.channel_size, self.channel_size, kernel_sizes[1]),
             nn.MaxPool1d(3),
-            AconC(channel_size),
-            nn.Conv1d(channel_size, channel_size, kernel_sizes[2]),
-            AconC(channel_size),
-            nn.Conv1d(channel_size, channel_size, kernel_sizes[3]),
-            AconC(channel_size),
-            nn.Conv1d(channel_size, channel_size, kernel_sizes[4]),
-            AconC(channel_size),
-            nn.Conv1d(channel_size, channel_size, kernel_sizes[5]),
+            AconC(self.channel_size),
+            nn.Conv1d(self.channel_size, self.channel_size, kernel_sizes[2]),
+            AconC(self.channel_size),
+            nn.Conv1d(self.channel_size, self.channel_size, kernel_sizes[3]),
+            AconC(self.channel_size),
+            nn.Conv1d(self.channel_size, self.channel_size, kernel_sizes[4]),
+            AconC(self.channel_size),
+            nn.Conv1d(self.channel_size, self.channel_size, kernel_sizes[5]),
             nn.MaxPool1d(3),
-            AconC(channel_size),
+            AconC(self.channel_size),
         )
 
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
-            nn.Linear(channel_size * 26, 1024),
+            nn.Linear(self._get_conv_out_size(), 1024), # 26
             AconC_FC(),
             nn.Dropout(p=0.5),
             nn.Linear(1024, 1024),
@@ -47,6 +47,13 @@ class CharCNN(Module):
         for module in self.modules():
             if isinstance(module, nn.Conv1d) or isinstance(module, nn.Linear):
                 module.weight.data.normal_(mean, std)
+
+    def _get_conv_out_size(self):
+        with torch.no_grad():
+            x = torch.rand(1, self.alphabet_size, self.num_chars)
+            x = self.conv(x)
+            x = x.view(1, -1)
+            return x.size(1)
 
     def forward(self, x):
         x = self.conv(x)

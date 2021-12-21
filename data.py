@@ -8,7 +8,6 @@ from torch import Tensor
 import re
 import transformers
 import nltk
-from transformers import AutoModel, BertTokenizerFast
 import random
 from random import shuffle
 from sklearn.feature_extraction.text import TfidfVectorizer

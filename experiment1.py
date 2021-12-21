@@ -1,10 +1,7 @@
 from classifier.logit_model import *
 from classifier.char_cnn import *
 from classifier.word2vec_clf import *
-from classifier.metric import *
-from classifier.plugin import *
 from util import *
-from sklearn.linear_model import LogisticRegression as LR
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 
 RAW_DATASET_PATH = Path('hate_speech_mlma/en_dataset_with_stop_words.csv')
@@ -19,7 +16,7 @@ def df_to_text_label(data: pd.DataFrame) -> List[np.ndarray]:
 
 def ndarray_to_dataset(data: List[np.ndarray]) -> TensorDataset:
     x = torch.from_numpy(data[0]).float()
-    y = torch.from_numpy(data[1]).float()
+    y = torch.from_numpy(data[1]).long()
     return TensorDataset(x, y)
 
 
