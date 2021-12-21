@@ -383,7 +383,10 @@ def eda(data, percentage_sr, percentage_ri, percentage_rs, percentage_rd, num_au
         new_text += augmented_sentences
         new_label += [label[j] for j in range(len(augmented_sentences))]
 
-    return [np.array(new_text), np.array(new_label)]
+    data = [np.array(new_text), np.array(new_label)]
+    perm = np.random.permutation(data[0].shape[0])
+    data = [data[i][perm] for i in range(len(data))]
+    return data
 
 # endregion
 
