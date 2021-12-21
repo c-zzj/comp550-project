@@ -4,7 +4,7 @@ from classifier.word2vec_clf import *
 from util import *
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 
-RAW_DATASET_PATH = Path('hate_speech_mlma/en_dataset_with_stop_words.csv')
+RAW_DATASET_PATH = Path('HOS.csv')
 
 TRAINED_MODELS_PATH = Path("trained-models-d1")
 

@@ -4,7 +4,7 @@ from classifier.word2vec_clf import *
 from util import *
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN
 
-RAW_DATASET_PATH = Path('english_dataset/english_dataset_all.tsv')
+RAW_DATASET_PATH = Path('HASOC.tsv')
 
 TRAINED_MODELS_PATH = Path("trained-models-d3")
 
