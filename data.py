@@ -56,8 +56,8 @@ def split_dataset(data: List[np.ndarray], ratios: Tuple[int] = (8, 1, 1)) \
     :param ratios: (training, validation, test) ratio of training, validation, and test sets
     :return: a tuple of tuples length 3, (train, val, test)
     """
-    perms = [np.random.permutation(part.shape[0]) for part in data]
-    data = [data[i][perms[i]] for i in range(len(data))]
+    perm = np.random.permutation(data[0].shape[0])
+    data = [data[i][perm] for i in range(len(data))]
 
     train = []
     val = []
