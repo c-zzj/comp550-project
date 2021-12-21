@@ -14,7 +14,7 @@ TRAINED_MODELS_PATH = Path("trained-models-d1")
 
 def df_to_text_label(data: pd.DataFrame) -> List[np.ndarray]:
     data = data.to_numpy()
-    return [data[:, 1], data[:, 2]]
+    return [data[:, 1], data[:, 3]]
 
 
 def ndarray_to_dataset(data: List[np.ndarray]) -> TensorDataset:
@@ -28,7 +28,7 @@ def run_baseline_1(epochs: int = 2, get_test: bool = False):
     p1 = [
         df_to_text_label,
         clean_text,
-        transform_label_multilabel,
+        transform_label_multiclass,
     ]
     transformed_data = transform_raw_data(raw, p1)
     split = split_dataset(transformed_data)
@@ -48,7 +48,7 @@ def run_baseline_1(epochs: int = 2, get_test: bool = False):
         ndarray_to_dataset
     ]
     train, val, test = preprocess(train, p2_train), preprocess(val, p2), preprocess(test, p2)
-    clf = ChainLogisticRegressionClassifier(training=train, validation=val, in_size=8000, num_labels=6)
+    clf = MultiClassLogisticRegressionClassifier(training=train, validation=val, in_size=8000, num_classes=2)
     model_path = Path(TRAINED_MODELS_PATH / 'logit')
     if get_test:
         clf.load_network(model_path, epochs)
@@ -69,7 +69,7 @@ def run_char_cnn_1(preprocessing: List[int] = [],
                    get_test: bool = False):
     raw = pd.read_csv(RAW_DATASET_PATH)
     p1 = [df_to_text_label,
-          transform_label_multilabel,
+          transform_label_multiclass,
           to_ascii]
     transformed_data = transform_raw_data(raw, p1)
 
@@ -93,7 +93,7 @@ def run_char_cnn_1(preprocessing: List[int] = [],
     p2 += [GetCharListConverter(num_chars=800), ndarray_to_dataset]
     train, val, test = preprocess(train, p2_train), preprocess(val, p2), preprocess(test, p2)
 
-    clf = MultiLabelCharCNNClassifier(training=train, validation=val, num_chars=800, alphabet_size=68, num_labels=6)
+    clf = MultiClassCharCNNClassifier(training=train, validation=val, num_chars=800, alphabet_size=68, num_classes=2)
     model_path = Path(TRAINED_MODELS_PATH / 'char-cnn')
     if get_test:
         clf.load_network(model_path, epochs)
@@ -117,7 +117,7 @@ def run_word_cnn_1(preprocessing: List[int] = [],
     p1 = [
         df_to_text_label,
         clean_text,
-        transform_label_multilabel,
+        transform_label_multiclass,
     ]
     transformed_data = transform_raw_data(raw, p1)
     split = split_dataset(transformed_data)
@@ -140,7 +140,7 @@ def run_word_cnn_1(preprocessing: List[int] = [],
     p2 += [GetWord2VecConverter(length=50), ndarray_to_dataset]
     train, val, test = preprocess(train, p2_train), preprocess(val, p2), preprocess(test, p2)
 
-    clf = MultiLabelWordCNNClassifier(training=train, validation=val, num_labels=6)
+    clf = MultiClassWordCNNClassifier(training=train, validation=val, num_classes=2)
     model_path = Path(TRAINED_MODELS_PATH / 'word-cnn')
     if get_test:
         clf.load_network(model_path, epochs)
