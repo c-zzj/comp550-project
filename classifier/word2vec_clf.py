@@ -7,9 +7,10 @@ from torch.nn import BCEWithLogitsLoss
 from classifier.metric import *
 from torch import nn
 
-# Word CNN from https://github.com/cezannec/CNN_Text_Classification
 
 ###################################################################
+# Word CNN from https://github.com/cezannec/CNN_Text_Classification
+
 class WordCNN(nn.Module):
     """An 1D Convulational Neural Network for Sentence Classification."""
 
